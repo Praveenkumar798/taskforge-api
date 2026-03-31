@@ -1,4 +1,4 @@
-const API_BASE = '/api';
+const API_BASE = window.location.hostname === 'localhost' ? '/api' : '/api';
 
 class ApiClient {
   constructor() {

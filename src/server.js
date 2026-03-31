@@ -1,4 +1,5 @@
 const express = require('express');
+const path = require('path');
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
@@ -15,7 +16,9 @@ const adminRoutes = require('./routes/admin.routes');
 const app = express();
 
 // ── Security Middleware ──
-app.use(helmet());
+app.use(helmet({
+  contentSecurityPolicy: false, // Allow React app to load
+}));
 app.use(cors({
   origin: env.clientUrl.split(',').map(url => url.trim()),
   credentials: true,
@@ -52,6 +55,19 @@ app.get('/api/health', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/admin', adminRoutes);
+
+// ── Serve React Frontend (Production) ──
+const clientDist = path.join(__dirname, '..', 'client', 'dist');
+app.use(express.static(clientDist));
+
+// Catch-all: serve React app for client-side routing
+app.get('*', (req, res, next) => {
+  // Only serve index.html for non-API routes
+  if (req.path.startsWith('/api')) {
+    return next();
+  }
+  res.sendFile(path.join(clientDist, 'index.html'));
+});
 
 // ── Error Handling ──
 app.use(notFound);
